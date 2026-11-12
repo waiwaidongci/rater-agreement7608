@@ -1,0 +1,1 @@
+<script setup lang="ts">defineProps<{index:string;title:string;description:string}>();</script><template><header class="page-heading"><div><small>SHANXU / CORE CLASSIFICATION LEDGER {{index}}</small><h1>{{title}}</h1><p>{{description}}</p></div><slot/></header></template>

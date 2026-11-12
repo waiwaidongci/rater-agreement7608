@@ -1,0 +1,1 @@
+<script setup lang="ts">defineProps<{title:string;help:string}>();</script><template><div class="empty"><small>NO COMPLETE RESEARCH</small><h2>{{title}}</h2><p>{{help}}</p><a href="#config">前往研究配置 →</a></div></template>

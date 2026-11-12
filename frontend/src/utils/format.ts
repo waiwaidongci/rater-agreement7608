@@ -1,0 +1,1 @@
+export const fmt=(n:number,d=4)=>Number.isFinite(n)?n.toLocaleString('zh-CN',{maximumFractionDigits:d}):'—';export const percent=(n:number)=>Number.isFinite(n)?(n*100).toFixed(1)+'%':'—';export const clock=(v:string)=>new Date(v).toLocaleString('zh-CN',{hour12:false});

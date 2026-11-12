@@ -1,0 +1,1 @@
+import {reactive} from 'vue';export function useTask(){const state=reactive({busy:false,error:'',message:''});async function act(fn:()=>Promise<any>,message='已保存'){state.busy=true;state.error='';state.message='';try{const r=await fn();state.message=message;return r}catch(e){state.error=e.message;return null}finally{state.busy=false}}return {state,act}}

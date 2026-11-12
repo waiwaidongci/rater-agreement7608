@@ -1,0 +1,4 @@
+-- Initial schema defined by ORM metadata; create_all at startup, not a production migration runner.
+-- agreement_studies(name UNIQUE,categories JSON,raters JSON), specimens(study_id,reference UNIQUE)
+-- rater_votes(specimen_id,rater UNIQUE,category), agreement_runs(result JSON,kappa DOUBLE,pbar DOUBLE,pe DOUBLE)
+-- review_memos(result_snapshot JSON), users(email UNIQUE), audit_logs. DOUBLE mappings use asdecimal=False.

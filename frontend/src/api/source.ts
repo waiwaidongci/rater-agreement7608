@@ -1,0 +1,1 @@
+import {request,post,patch} from './client';export const sourceApi={studies:()=>request('/studies'),specimens:()=>request('/specimens'),votes:()=>request('/votes'),create:(data:any)=>post('/studies',data),editVote:(id:number,category:string)=>patch('/votes/'+id,{category}),editSpecimen:(id:number,description:string)=>patch('/specimens/'+id,{description})};

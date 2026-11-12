@@ -1,0 +1,1 @@
+export const ROLES={admin:'图谱研究负责人',analyst:'标记分析员',viewer:'口径观察员'};export const RUN_STATUS={queued:'等待核算',running:'κ与整样本重采样',completed:'已核对',failed:'失败'};export const MEMO_STATUS={draft:'待审阅',approved:'已批准',rejected:'已退回'};
