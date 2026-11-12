@@ -1,0 +1,8 @@
+<script setup lang="ts">import {computed} from 'vue';
+const p=defineProps<{run:any;user?:any}>(),emit=defineEmits(['requeue']);
+const batch=computed(()=>p.run.batch);
+const tone=computed<'frozen'|'drifted'|'missing'>(()=>{if(!batch.value?.has_snapshot)return 'missing';if(batch.value.current_matches_queued===false)return 'drifted';return 'frozen'});
+const labels={frozen:'资料批次已冻结：排队后逐票与补注未发生变化，结果可按当前资料复核。',drifted:'排队后发生过改票或补注：本运行仍按排队当时的原批计算，后续编辑只影响新排队的运行。',missing:'该旧版运行缺少排队时刻的原始资料快照，无法按原批核对；系统不会以当前资料补齐，请重新排队生成新运行。'};
+const pillText={frozen:'原批冻结 · 现状一致',drifted:'原批计算 · 现状已改',missing:'原始资料缺失'};
+const short=(v?:string|null)=>v?v.slice(0,12)+'…'+v.slice(-8):'—';
+</script><template><section class="batch-badge" :data-tone="tone"><header><strong>资料批次核对</strong><span :class="['batch-pill','batch-pill-'+tone]">{{pillText[tone]}}</span><button v-if="user&&user.role!=='viewer'&&(run.status==='running'||run.status==='queued')" class="batch-requeue" @click="emit('requeue',run)">中断恢复：重投同一任务 ↻</button></header><p>{{labels[tone]}}</p><dl v-if="batch?.has_snapshot"><div><dt>快照版本</dt><dd>{{batch.snapshot_version}}</dd></div><div><dt>排队批次指纹</dt><dd class="fingerprint" :title="batch.queued_fingerprint||''">{{short(batch.queued_fingerprint)}}</dd></div><div><dt>当前资料指纹</dt><dd class="fingerprint" :title="batch.current_fingerprint||''">{{short(batch.current_fingerprint)}}</dd></div><div><dt>核对结论</dt><dd>{{batch.current_matches_queued?'一致：未发生穿插改票':'不一致：存在排队后改票/补注'}}</dd></div></dl><dl v-else><div><dt>排队批次指纹</dt><dd>缺失</dd></div><div><dt>核对结论</dt><dd>无法核对，禁止用现状反推原批</dd></div></dl></section></template>

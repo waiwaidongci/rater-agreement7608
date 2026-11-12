@@ -37,8 +37,17 @@ Compose恰好frontend/backend/worker/db/redis五服务，均有健康检查。Ng
 5. A研究实际N120/360票，Pbar=0.7083333333、Pe=0.2511265432、κ=0.6105260989。类别总票97/95/84/84，一起解释机会基线。
 6. 读400有效/0退化重复和经验percentile区间[0.5296296698,0.6836294491]，可展开每次抽取行索引、κ与失败理由。它只在固定面板与iid试样条件下解释。
 7. 对照“单类边界评议”：全部票同类时Pe=1、κ未定义，worker会失败，不把它标成κ1。全一致但有多类时κ可以1。
-8. 在“口径复核”写争议试样的类别边界与独立复核行动，保持原三位标记者。说明冻结整份统计与bootstrap快照。
-9. 负责人纪岚批准/退回；观察员陶野下载批准CSV（κ、Pbar、Pe、有效/退化数、区间、逐试样P和计数）。重复审批409，后续改票不改写已有快照；过程留痕核对全部动作。
+8. 在“口径复核”写争议试样的类别边界与独立复核行动，保持原三位标记者。说明冻结整份统计与bootstrap快照，并内嵌排队资料批次指纹。
+9. 负责人纪岚批准/退回；观察员陶野下载批准CSV（含快照版本、排队/当前指纹与批次核对、κ、Pbar、Pe、有效/退化数、区间、逐试样P和计数）。重复审批409，后续改票不改写已有快照；过程留痕核对全部动作。
+
+## 排队即冻结的资料批次
+
+运行在**排队当时**就把研究声明、试样（含补注）、逐票与面板参数（B/seed/面板范围）整体冻结到 `agreement_runs.source_snapshot`，并计算64位 `queued_fingerprint`。worker执行时只读该快照，绝不回查当前数据库；因此排队后的改票、补注、参数调整不会影响本运行，只会影响之后新排队的运行。结果内的 `fingerprint` 必然等于排队指纹，两者可互相核对。
+
+- 结果页与运行列表展示“资料批次核对”：快照版本、排队指纹、按当前资料重算的指纹，以及二者是否一致。不一致时明确标注“排队后已改票·按原批”，说明本结果对应排队原批而非现状。
+- 中断恢复与重复投递是幂等的：worker以行锁领取，仅 `queued` 任务会被置 `running` 计算，终态（completed/failed）直接跳过，重复执行同一任务不新增运行、不改写结果。`POST /runs/{id}/requeue` 把滞留的 queued（消息丢失）或 running（进程中断）任务重新入队，仍按原批快照计算；对终态任务返回409。
+- 本改造前创建的旧运行没有快照：未完成的由worker明确失败，提示“缺少排队时刻的原始资料快照……请重新排队”，不会拿当前资料补齐；已完成的保留历史结果可查看，但结果页明确标注原始资料缺失，且禁止据此建立复核说明（422）。
+- 复核说明在建立时把快照版本、排队指纹、当时的当前指纹与一致性结论写入 `result_snapshot.batch`；批准CSV增加快照版本、排队/当前指纹与“批次核对”列，可逐份核对说明引用的是哪一批逐票与参数。
 
 ## Fleiss κ与整行bootstrap口径
 
@@ -60,7 +69,7 @@ MySQL的κ/Pbar/Pe列均用DOUBLE(asdecimal=False)，保持Python float，避免
 
 ## 结构与校验
 
-77个有职责的Python/TS/Vue/CSS源文件（不计空包、依赖和dist）。五实体AgreementStudy → Specimen → RaterVote → AgreementRun → ReviewMemo贯穿ORM/schema/service/routes、前端API/store和六页：评议总览、试样与逐票、固定面板配置、κ与重采样、口径复核、过程留痕。
+五实体AgreementStudy → Specimen → RaterVote → AgreementRun → ReviewMemo贯穿ORM/schema/service/routes、前端API/store和六页：评议总览、试样与逐票、固定面板配置、κ与重采样、口径复核、过程留痕。AgreementRun 额外持有 `source_snapshot`（排队冻结的试样/逐票/参数）与 `queued_fingerprint`；`services/snapshot.py` 负责冻结与批次指纹，worker 只按快照计算。当前共90个有职责的 Python/TS/Vue/CSS 源文件（不计空包、依赖、dist），另含 `backend/tests/` 两套可独立运行的验证脚本。
 
 前端 `src/{api,stores,types,components/common,hooks,pages,router,utils,constants}`；后端 `src/{routes,controllers,services,models,schemas,middlewares,utils,constants,config}`，另scripts/seed_demo.py与migrations/。VoteMatrix、AgreementSummary、CategoryMargins、RunList多页复用，BootstrapStrip展示后端实际频数和经验区间；useTask/useRoute和format工具处理交互。
 
@@ -77,4 +86,4 @@ MySQL的κ/Pbar/Pe列均用DOUBLE(asdecimal=False)，保持Python float，避免
 
 本地前端 `cd frontend && npm ci && npm run dev`；`npm run build`执行vue-tsc与Vite。后端安装requirements并设置DATABASE_URL/REDIS_URL/JWT_SECRET后运行uvicorn。当前用ORM create_all建表，migrations提供初始结构说明，不声称生产版本迁移链。许可证MIT，见LICENSE。
 
-实际验收见批次 `test-artifacts/gb-0031/TESTING.md`，测试脚本、关键JSON、CSV、PNG、原始.log与源码分离。未做外部真实岩相准确率验证、生产压力或完整无障碍审计。令牌/IP分钟限流不是生产抗滥用全链路，重新登录可获得新令牌计数。Google字体断网时回退本地字体。任何复核方案仍需试验员结合图谱定义执行，不提供地质因果或现场风险保证。
+实际验收见批次 `test-artifacts/gb-0031/TESTING.md`，测试脚本、关键JSON、CSV、PNG、原始.log与源码分离。无 Docker/MySQL/Redis 时也可运行仓库内脚本（仅需 Python 依赖，用 SQLite 临时库并把 Celery 任务当普通函数同步执行）：`python -I backend/tests/test_snapshot_e2e.py` 覆盖排队冻结、改票穿插排队、重复执行幂等、queued/running 中断恢复、旧运行缺快照拦截、说明批次留痕与CSV核对（42项）；`python -I backend/tests/test_http_flows.py` 经真实 FastAPI 路由/鉴权验证上述行为并在独立子进程核对 seed_demo 幂等（27项）。未做外部真实岩相准确率验证、生产压力或完整无障碍审计。令牌/IP分钟限流不是生产抗滥用全链路，重新登录可获得新令牌计数。Google字体断网时回退本地字体。任何复核方案仍需试验员结合图谱定义执行，不提供地质因果或现场风险保证。
